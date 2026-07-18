@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: adriano-law-site
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      - key: TO_EMAIL
+        sync: false
