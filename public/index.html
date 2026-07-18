@@ -353,13 +353,41 @@
   form { background: var(--ink); padding: 36px; border-radius: 20px; display: flex; flex-direction: column; gap: 16px; }
   form .form-title { color: var(--paper); font-family: 'Newsreader', serif; font-size: 19px; margin-bottom: 4px; }
   .field label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brass-light); font-weight: 600; margin-bottom: 7px; }
-  .field input, .field textarea, .field select {
+  .field input, .field textarea {
     width: 100%; background: rgba(242,236,217,0.07); border: 1px solid rgba(242,236,217,0.22);
     color: var(--paper); padding: 11px 13px; font-family: inherit; font-size: 14px; border-radius: 10px; outline: none;
   }
   .field input::placeholder, .field textarea::placeholder { color: rgba(242,236,217,0.35); }
-  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--brass-light); }
+  .field input:focus, .field textarea:focus { border-color: var(--brass-light); }
   .field textarea { resize: vertical; min-height: 84px; }
+
+  /* ---------- Custom select ---------- */
+  .custom-select { position: relative; }
+  .custom-select-trigger {
+    width: 100%; background: rgba(242,236,217,0.07); border: 1px solid rgba(242,236,217,0.22);
+    color: var(--paper); padding: 11px 13px; font-family: inherit; font-size: 14px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    cursor: pointer; text-align: left; transition: border-color 0.15s ease;
+  }
+  .custom-select-trigger:hover { border-color: rgba(242,236,217,0.4); }
+  .custom-select.open .custom-select-trigger { border-color: var(--brass-light); }
+  .cs-arrow { width: 16px; height: 16px; flex-shrink: 0; color: var(--brass-light); transition: transform 0.2s ease; }
+  .custom-select.open .cs-arrow { transform: rotate(180deg); }
+  .custom-select-options {
+    list-style: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+    background: #2A2418; border: 1px solid rgba(242,236,217,0.22); border-radius: 10px;
+    padding: 6px; max-height: 240px; overflow-y: auto;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+    opacity: 0; visibility: hidden; transform: translateY(-6px);
+    transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+  }
+  .custom-select.open .custom-select-options { opacity: 1; visibility: visible; transform: translateY(0); }
+  .custom-select-options li {
+    padding: 10px 12px; border-radius: 7px; font-size: 14px; color: rgba(242,236,217,0.85);
+    cursor: pointer; transition: background 0.12s ease, color 0.12s ease;
+  }
+  .custom-select-options li:hover, .custom-select-options li.active { background: rgba(201,162,78,0.16); color: var(--paper); }
+  .custom-select-options li.selected { color: var(--brass-light); font-weight: 600; }
   form button {
     margin-top: 6px; background: var(--maroon); color: var(--card); border: 1px solid var(--maroon); padding: 13px 24px;
     font-weight: 600; font-size: 14px; border-radius: 999px; cursor: pointer; transition: background 0.2s ease; font-family: inherit;
@@ -567,14 +595,21 @@
       <div class="field"><label for="email">Email Address</label><input id="email" name="email" type="email" placeholder="juan@email.com" required></div>
       <div class="field">
         <label for="matter">Nature of Inquiry</label>
-        <select id="matter" name="matter">
-          <option>Criminal Litigation</option>
-          <option>Civil Litigation</option>
-          <option>Corporate Practice</option>
-          <option>Election Protest / Disqualification</option>
-          <option>Administrative Proceedings</option>
-          <option>Other</option>
-        </select>
+        <div class="custom-select" id="matter-select">
+          <button type="button" class="custom-select-trigger" id="matter-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <span id="matter-value">Criminal Litigation</span>
+            <svg class="cs-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <ul class="custom-select-options" id="matter-options" role="listbox" tabindex="-1">
+            <li role="option" data-value="Criminal Litigation" class="selected">Criminal Litigation</li>
+            <li role="option" data-value="Civil Litigation">Civil Litigation</li>
+            <li role="option" data-value="Corporate Practice">Corporate Practice</li>
+            <li role="option" data-value="Election Protest / Disqualification">Election Protest / Disqualification</li>
+            <li role="option" data-value="Administrative Proceedings">Administrative Proceedings</li>
+            <li role="option" data-value="Other">Other</li>
+          </ul>
+        </div>
+        <input type="hidden" id="matter" name="matter" value="Criminal Litigation">
       </div>
       <div class="field"><label for="message">Message</label><textarea id="message" name="message" placeholder="Briefly describe your situation and what you need help with." required></textarea></div>
       <!-- Honeypot field: hidden from real users, bots tend to fill it in -->
@@ -585,6 +620,43 @@
       <button type="submit" id="contact-submit">Send Message</button>
       <p class="form-note">This form is for general inquiries and does not establish attorney-client privilege.</p>
     </form>
+    <script>
+      // ---------- Custom dropdown ----------
+      const csWrap = document.getElementById('matter-select');
+      const csTrigger = document.getElementById('matter-trigger');
+      const csValue = document.getElementById('matter-value');
+      const csOptions = document.getElementById('matter-options');
+      const csHidden = document.getElementById('matter');
+      const csItems = Array.from(csOptions.querySelectorAll('li'));
+
+      function csOpen() {
+        csWrap.classList.add('open');
+        csTrigger.setAttribute('aria-expanded', 'true');
+      }
+      function csClose() {
+        csWrap.classList.remove('open');
+        csTrigger.setAttribute('aria-expanded', 'false');
+      }
+      csTrigger.addEventListener('click', () => {
+        csWrap.classList.contains('open') ? csClose() : csOpen();
+      });
+      csItems.forEach(item => {
+        item.addEventListener('click', () => {
+          csItems.forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          csValue.textContent = item.dataset.value;
+          csHidden.value = item.dataset.value;
+          csClose();
+        });
+      });
+      document.addEventListener('click', (e) => {
+        if (!csWrap.contains(e.target)) csClose();
+      });
+      csTrigger.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); csWrap.classList.contains('open') ? csClose() : csOpen(); }
+        if (e.key === 'Escape') csClose();
+      });
+    </script>
     <script>
       const form = document.getElementById('contact-form');
       const note = form.querySelector('.form-note');

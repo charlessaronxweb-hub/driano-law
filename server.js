@@ -9,6 +9,17 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;       // from resend.com
 const FROM_EMAIL = process.env.FROM_EMAIL;                // e.g. "Website <onboarding@resend.dev>" or your verified domain sender
 const TO_EMAIL = process.env.TO_EMAIL;                     // Atty. Adriano's real inbox
 
+// ---------- Startup debug (safe — never logs the full key) ----------
+function maskKey(key) {
+  if (!key) return '(not set)';
+  const trimmed = key.trim();
+  const hasWhitespace = trimmed !== key;
+  return `len=${key.length} starts="${key.slice(0, 5)}" ends="${key.slice(-3)}" trimMismatch=${hasWhitespace}`;
+}
+console.log('RESEND_API_KEY check:', maskKey(RESEND_API_KEY));
+console.log('FROM_EMAIL:', FROM_EMAIL || '(not set)');
+console.log('TO_EMAIL:', TO_EMAIL || '(not set)');
+
 // ---------- Middleware ----------
 app.use(express.json());
 app.use(express.static(require('path').join(__dirname, 'public')));
@@ -44,12 +55,41 @@ async function sendEmail({ name, email, matter, message }) {
       reply_to: email,
       subject: `New website inquiry — ${matter}`,
       html: `
-        <h2>New Inquiry from the Website</h2>
-        <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
-        <p><strong>Matter:</strong> ${escapeHtml(matter)}</p>
-        <p><strong>Message:</strong></p>
-        <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+        <div style="font-family:Georgia,'Times New Roman',serif;max-width:600px;margin:0 auto;background:#F2ECD9;">
+          <div style="background:#211D14;padding:28px 32px;text-align:center;">
+            <p style="margin:0;color:#C9A24E;font-family:Consolas,Menlo,monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;">New Website Inquiry</p>
+            <h1 style="margin:8px 0 0;color:#F2ECD9;font-size:22px;font-weight:500;">Adriano Law Office</h1>
+          </div>
+          <div style="padding:32px;background:#FBF8EE;">
+            <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;">
+              <tr>
+                <td style="padding:12px 0;border-bottom:1px dashed rgba(33,29,20,0.25);width:110px;vertical-align:top;">
+                  <span style="font-family:Consolas,Menlo,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#7A2430;font-weight:bold;">Name</span>
+                </td>
+                <td style="padding:12px 0;border-bottom:1px dashed rgba(33,29,20,0.25);color:#211D14;font-size:15px;">${escapeHtml(name)}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 0;border-bottom:1px dashed rgba(33,29,20,0.25);vertical-align:top;">
+                  <span style="font-family:Consolas,Menlo,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#7A2430;font-weight:bold;">Email</span>
+                </td>
+                <td style="padding:12px 0;border-bottom:1px dashed rgba(33,29,20,0.25);font-size:15px;"><a href="mailto:${escapeHtml(email)}" style="color:#211D14;">${escapeHtml(email)}</a></td>
+              </tr>
+              <tr>
+                <td style="padding:12px 0;border-bottom:1px dashed rgba(33,29,20,0.25);vertical-align:top;">
+                  <span style="font-family:Consolas,Menlo,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#7A2430;font-weight:bold;">Matter</span>
+                </td>
+                <td style="padding:12px 0;border-bottom:1px dashed rgba(33,29,20,0.25);font-size:15px;color:#211D14;">${escapeHtml(matter)}</td>
+              </tr>
+            </table>
+            <div style="margin-top:24px;">
+              <span style="font-family:Consolas,Menlo,monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#7A2430;font-weight:bold;">Message</span>
+              <p style="margin:10px 0 0;padding:16px 18px;background:#F2ECD9;border-left:3px solid #C9A24E;border-radius:6px;color:#211D14;font-size:14.5px;line-height:1.6;font-family:Arial,sans-serif;">${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+            </div>
+          </div>
+          <div style="padding:18px 32px;background:#E9E0C6;text-align:center;">
+            <p style="margin:0;font-family:Consolas,Menlo,monospace;font-size:11px;color:#5C5442;">Reply directly to this email to respond to ${escapeHtml(name.split(' ')[0] || 'the sender')}.</p>
+          </div>
+        </div>
       `,
     }),
   });
